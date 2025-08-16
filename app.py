@@ -145,8 +145,11 @@ def analyze_repository_enhanced():
             logger.info("Initializing enhanced analyzer with graph database")
             analyzer = EnhancedGitAnalyzer(graph_db)
             
+            def progress_callback(message):
+                logger.info(f"Enhanced Analysis Progress: {message}")
+            
             logger.info("Starting enhanced repository analysis")
-            repo_data = analyzer.analyze_repository_full(repo_url, temp_dir)
+            repo_data = analyzer.analyze_repository_full(repo_url, temp_dir, progress_callback=progress_callback)
             logger.info(f"Enhanced analysis complete: {len(repo_data.get('commits', []))} commits processed")
             
             logger.info("Storing enhanced analysis results")
@@ -338,7 +341,11 @@ def analyze_with_llm():
             # Enhanced analysis with embeddings
             logger.info("Starting enhanced repository analysis")
             analyzer = EnhancedGitAnalyzer(vector_db)
-            repo_data = analyzer.analyze_repository_full(repo_url, temp_dir, max_commits=100)
+            
+            def progress_callback(message):
+                logger.info(f"LLM Analysis Progress: {message}")
+            
+            repo_data = analyzer.analyze_repository_full(repo_url, temp_dir, max_commits=100, progress_callback=progress_callback)
             logger.info(f"Repository analysis complete: {len(repo_data.get('commits', []))} commits analyzed")
             
             # Analyze PRs if requested and available

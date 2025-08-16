@@ -50,9 +50,12 @@ class EnhancedGitAnalyzer:
         }
     
     def analyze_repository_full(self, repo_url: str, local_path: str, 
-                               max_commits: int = 500) -> Dict[str, Any]:
+                               max_commits: int = 500, progress_callback=None) -> Dict[str, Any]:
         try:
             repo = git.Repo.clone_from(repo_url, local_path)
+            
+            if progress_callback:
+                progress_callback("Repository cloned, initializing graph storage...")
             
             repo_data = {
                 'url': repo_url,
@@ -61,16 +64,28 @@ class EnhancedGitAnalyzer:
             }
             
             if self.graph_db:
+                if progress_callback:
+                    progress_callback("Storing repository metadata in graph database...")
                 repo_id = self.graph_db.store_repository(repo_data)
             
-            commits_data = self._analyze_commits_detailed(repo, repo_url, max_commits)
+            if progress_callback:
+                progress_callback("Analyzing commits and building graph relationships...")
+            commits_data = self._analyze_commits_detailed(repo, repo_url, max_commits, progress_callback)
             
-            file_structure = self._analyze_file_structure(repo, repo_url)
+            if progress_callback:
+                progress_callback("Processing file structure and code analysis...")
+            file_structure = self._analyze_file_structure(repo, repo_url, progress_callback)
             
-            dependencies = self._analyze_dependencies(repo, repo_url)
+            if progress_callback:
+                progress_callback("Mapping dependencies in graph...")
+            dependencies = self._analyze_dependencies(repo, repo_url, progress_callback)
             
+            if progress_callback:
+                progress_callback("Computing architecture metrics...")
             architecture_metrics = self._calculate_architecture_metrics(repo, repo_url)
             
+            if progress_callback:
+                progress_callback("Analyzing evolution patterns...")
             evolution_patterns = self._analyze_evolution_patterns(commits_data)
             
             return {
@@ -92,13 +107,16 @@ class EnhancedGitAnalyzer:
         except:
             return 'main'
     
-    def _analyze_commits_detailed(self, repo, repo_url: str, max_commits: int) -> List[Dict[str, Any]]:
+    def _analyze_commits_detailed(self, repo, repo_url: str, max_commits: int, progress_callback=None) -> List[Dict[str, Any]]:
         commits = []
         commit_count = 0
         
         for commit in repo.iter_commits():
             if commit_count >= max_commits:
                 break
+            
+            if progress_callback and commit_count % 50 == 0:
+                progress_callback(f"Processed {commit_count}/{max_commits} commits...")
             
             commit_type = self._classify_commit_advanced(commit.message)
             
@@ -183,7 +201,7 @@ class EnhancedGitAnalyzer:
         ext = os.path.splitext(file_path)[1].lower()
         return self.language_extensions.get(ext, 'unknown')
     
-    def _analyze_file_structure(self, repo, repo_url: str) -> Dict[str, Any]:
+    def _analyze_file_structure(self, repo, repo_url: str, progress_callback=None) -> Dict[str, Any]:
         structure = {
             'total_files': 0,
             'by_language': defaultdict(int),
@@ -193,6 +211,7 @@ class EnhancedGitAnalyzer:
         }
         
         try:
+            file_count = 0
             for item in repo.tree().traverse():
                 if item.type == 'blob':
                     file_path = item.path
@@ -202,6 +221,10 @@ class EnhancedGitAnalyzer:
                     structure['total_files'] += 1
                     structure['by_extension'][extension] += 1
                     structure['by_language'][language] += 1
+                    file_count += 1
+                    
+                    if progress_callback and file_count % 100 == 0:
+                        progress_callback(f"Analyzed {file_count} files for structure...")
                     
                     directory = os.path.dirname(file_path)
                     if directory:
@@ -307,7 +330,7 @@ class EnhancedGitAnalyzer:
                 complexity += len(child.values) - 1
         return complexity
     
-    def _analyze_dependencies(self, repo, repo_url: str) -> Dict[str, Any]:
+    def _analyze_dependencies(self, repo, repo_url: str, progress_callback=None) -> Dict[str, Any]:
         dependencies = {
             'external': [],
             'internal': defaultdict(list),
@@ -328,6 +351,8 @@ class EnhancedGitAnalyzer:
         for dep_file, manager in dependency_files.items():
             try:
                 if dep_file in repo.tree():
+                    if progress_callback:
+                        progress_callback(f"Parsing {dep_file} dependencies...")
                     content = repo.odb.stream(repo.tree()[dep_file].binsha).read().decode('utf-8', errors='ignore')
                     dependencies['package_managers'][manager] = self._parse_dependency_file(dep_file, content)
             except:

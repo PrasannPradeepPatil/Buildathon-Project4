@@ -103,32 +103,58 @@ function startProgressUpdates(analysisType, analyzePRs) {
         if (step < steps.length) {
             updateProgress(steps[step].key, steps[step].message);
             step++;
+        } else {
+            // Once all steps are shown, update to 'complete' after a delay
+            if (steps.length > 0) {
+                updateProgress('complete', 'Analysis completed successfully!');
+            }
+            clearInterval(this); // Stop interval once done
         }
     }, 3000); // Update every 3 seconds
 }
 
+
 function getProgressSteps(analysisType, analyzePRs) {
     const baseSteps = [
-        { key: 'cloning', message: 'Cloning repository...' },
         { key: 'commits', message: 'Analyzing commit history...' },
-        { key: 'files', message: 'Processing file structure...' }
+        { key: 'files', message: 'Processing file changes...' },
+        { key: 'contributors', message: 'Analyzing contributors...' }
     ];
 
-    if (analysisType === 'enhanced' || analysisType === 'llm') {
-        baseSteps.push(
-            { key: 'dependencies', message: 'Analyzing dependencies...' },
-            { key: 'embeddings', message: 'Generating semantic embeddings...' }
-        );
+    if (analysisType === 'enhanced') {
+        return [
+            { key: 'embeddings', message: 'Preparing enhanced analysis with graph database...' },
+            { key: 'repository', message: 'Storing repository metadata in graph...' },
+            { key: 'commits', message: 'Processing commits with detailed analysis...' },
+            { key: 'graph_structure', message: 'Building graph relationships...' },
+            { key: 'code_analysis', message: 'Analyzing code structure (AST parsing)...' },
+            { key: 'dependencies', message: 'Mapping file dependencies...' },
+            { key: 'architecture', message: 'Computing architecture metrics...' },
+            { key: 'patterns', message: 'Detecting evolution patterns...' },
+            { key: 'graph_insights', message: 'Generating graph-based insights...' },
+            { key: 'finalization', message: 'Finalizing enhanced analysis...' }
+        ];
     }
 
     if (analysisType === 'llm') {
-        if (analyzePRs) {
-            baseSteps.push({ key: 'prs', message: 'Analyzing pull requests...' });
-        }
-        baseSteps.push({ key: 'narrative', message: 'Generating AI narrative...' });
-    }
+        const steps = [
+            { key: 'embeddings', message: 'Preparing AI-powered analysis...' },
+            { key: 'repository', message: 'Analyzing repository structure...' },
+            { key: 'commits', message: 'Processing commits with AI analysis...' },
+            { key: 'graph_embeddings', message: 'Storing embeddings in vector database...' },
+            { key: 'narrative', message: 'Generating change narrative...' }
+        ];
 
-    baseSteps.push({ key: 'storing', message: 'Storing analysis results...' });
+        if (analyzePRs) {
+            steps.splice(4, 0, { key: 'prs', message: 'Analyzing pull requests with AI...' });
+        }
+
+        steps.push({ key: 'clustering', message: 'Identifying semantic clusters...' });
+        steps.push({ key: 'vector_indexing', message: 'Building vector search indexes...' });
+        steps.push({ key: 'finalization', message: 'Finalizing AI analysis...' });
+
+        return steps;
+    }
 
     return baseSteps;
 }
@@ -264,11 +290,11 @@ function displayResults(data, analysisType = 'basic') {
     // Show/hide enhanced sections based on analysis type
     const enhancedSections = document.querySelector('.enhanced-sections');
     const interactiveSections = document.querySelector('.interactive-sections');
-    
+
     if (analysisType === 'enhanced' || analysisType === 'llm') {
         if (enhancedSections) enhancedSections.style.display = 'block';
         if (interactiveSections) interactiveSections.style.display = 'block';
-        
+
         if (data.file_structure) {
             displayFileStructure(data.file_structure);
         }
@@ -404,15 +430,32 @@ function updateProgress(step, message) {
 }
 
 function updateProgressVisual(currentStep) {
-    const stepOrder = ['cloning', 'commits', 'files', 'embeddings', 'complete'];
-    const currentIndex = stepOrder.indexOf(currentStep);
+    const stepOrder = ['cloning', 'commits', 'files', 'embeddings', 'complete']; // Default order
+    let dynamicStepOrder = [];
+
+    const analysisType = document.getElementById('analysis-type').value;
+    const analyzePRs = document.getElementById('analyze-prs').checked;
+
+    if (analysisType === 'enhanced') {
+        dynamicStepOrder = ['cloning', 'repository', 'commits', 'graph_structure', 'code_analysis', 'dependencies', 'architecture', 'patterns', 'graph_insights', 'embeddings', 'finalization', 'complete'];
+    } else if (analysisType === 'llm') {
+        dynamicStepOrder = ['cloning', 'repository', 'commits', 'embeddings', 'graph_embeddings', 'narrative'];
+        if (analyzePRs) {
+            dynamicStepOrder.splice(5, 0, 'prs'); // Insert PRs after narrative
+        }
+        dynamicStepOrder.push('clustering', 'vector_indexing', 'finalization', 'complete');
+    } else {
+        dynamicStepOrder = ['cloning', 'commits', 'files', 'contributors', 'complete'];
+    }
+
+    const currentIndex = dynamicStepOrder.indexOf(currentStep);
 
     if (currentIndex === -1) return;
 
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
     if (progressFill) {
-        const percentage = ((currentIndex + 1) / stepOrder.length) * 100;
+        const percentage = ((currentIndex + 1) / dynamicStepOrder.length) * 100;
         progressFill.style.width = `${percentage}%`;
     }
 
@@ -420,7 +463,7 @@ function updateProgressVisual(currentStep) {
     const steps = document.querySelectorAll('.step');
     steps.forEach((stepEl, index) => {
         const stepKey = stepEl.getAttribute('data-step');
-        const stepIndex = stepOrder.indexOf(stepKey);
+        const stepIndex = dynamicStepOrder.indexOf(stepKey);
 
         stepEl.classList.remove('active', 'completed');
 
@@ -628,13 +671,13 @@ document.addEventListener('DOMContentLoaded', function() {
     hideLoading();
     hideResults();
     hideError();
-    
+
     // Hide enhanced sections initially
     const enhancedSections = document.querySelector('.enhanced-sections');
     const interactiveSections = document.querySelector('.interactive-sections');
     if (enhancedSections) enhancedSections.style.display = 'none';
     if (interactiveSections) interactiveSections.style.display = 'none';
-    
+
     const semanticQuery = document.getElementById('semantic-query');
     if (semanticQuery) {
         semanticQuery.addEventListener('keypress', function(e) {
