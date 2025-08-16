@@ -121,6 +121,11 @@ button:disabled {
 .loading {
     text-align: center;
     padding: 2rem;
+    display: none;
+}
+
+.loading.hidden {
+    display: none !important;
 }
 
 .spinner {

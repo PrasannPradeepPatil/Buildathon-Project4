@@ -619,6 +619,9 @@ document.getElementById('repo-url').addEventListener('keypress', function(e) {
     }
 });
 
+// Immediately hide loading on script load
+hideLoading();
+
 // Initialize page state and event listeners
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure proper initial state
