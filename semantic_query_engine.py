@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import json
@@ -6,6 +7,13 @@ from vector_graph_database import VectorGraphDatabase
 from llm_code_analyzer import LLMCodeAnalyzer
 from embedding_manager import EmbeddingManager
 from architecture_analyzer import ArchitectureAnalyzer
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 class SemanticQueryEngine:
     def __init__(self, vector_db: VectorGraphDatabase, llm_analyzer: LLMCodeAnalyzer):
@@ -16,19 +24,26 @@ class SemanticQueryEngine:
     
     def answer_question(self, question: str, repo_url: str, 
                        context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        logger.info(f"Processing semantic question for {repo_url}: {question}")
         question_lower = question.lower()
         
         if self._is_semantic_query(question_lower):
+            logger.info("Identified as semantic query")
             return self._handle_semantic_query(question, repo_url, context)
         elif self._is_evolution_query(question_lower):
+            logger.info("Identified as evolution query")
             return self._handle_evolution_query(question, repo_url, context)
         elif self._is_impact_query(question_lower):
+            logger.info("Identified as impact query")
             return self._handle_impact_query(question, repo_url, context)
         elif self._is_pattern_query(question_lower):
+            logger.info("Identified as pattern query")
             return self._handle_pattern_query(question, repo_url, context)
         elif self._is_collaboration_query(question_lower):
+            logger.info("Identified as collaboration query")
             return self._handle_collaboration_query(question, repo_url, context)
         else:
+            logger.info("Identified as general query")
             return self._handle_general_query(question, repo_url, context)
     
     def _is_semantic_query(self, question: str) -> bool:
@@ -54,7 +69,11 @@ class SemanticQueryEngine:
     
     def _handle_semantic_query(self, question: str, repo_url: str, 
                               context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        logger.info(f"Handling semantic query: {question}")
+        
+        logger.info("Performing semantic search on commits")
         similar_commits = self.vector_db.semantic_search_commits(question, repo_url, top_k=10)
+        logger.info(f"Found {len(similar_commits)} similar commits")
         
         response = {
             'question': question,

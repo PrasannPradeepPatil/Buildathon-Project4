@@ -1,9 +1,17 @@
 import os
+import logging
 from neo4j import GraphDatabase
 from datetime import datetime
 import json
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 load_dotenv()
 
@@ -16,15 +24,18 @@ class GraphDatabaseManager:
         self._connect()
     
     def _connect(self):
+        logger.info(f"Attempting to connect to Neo4j at {self.uri}")
         try:
             self.driver = GraphDatabase.driver(self.uri, auth=(self.username, self.password))
             self.driver.verify_connectivity()
+            logger.info("Successfully connected to Neo4j database")
             self._create_constraints()
         except Exception as e:
-            print(f"Failed to connect to Neo4j: {e}")
+            logger.error(f"Failed to connect to Neo4j: {e}")
             self.driver = None
     
     def _create_constraints(self):
+        logger.info("Creating Neo4j constraints and indexes")
         with self.driver.session() as session:
             constraints = [
                 "CREATE CONSTRAINT IF NOT EXISTS FOR (r:Repository) REQUIRE r.url IS UNIQUE",
@@ -37,15 +48,22 @@ class GraphDatabaseManager:
                 "CREATE INDEX IF NOT EXISTS FOR (cl:Class) ON (cl.name)",
                 "CREATE INDEX IF NOT EXISTS FOR (fn:Function) ON (fn.name)"
             ]
+            
+            success_count = 0
             for constraint in constraints:
                 try:
                     session.run(constraint)
+                    success_count += 1
                 except Exception as e:
-                    print(f"Constraint creation warning: {e}")
+                    logger.warning(f"Constraint creation warning: {e}")
+            
+            logger.info(f"Successfully created {success_count}/{len(constraints)} constraints/indexes")
     
     def store_repository(self, repo_data: Dict[str, Any]) -> str:
+        logger.info(f"Storing repository: {repo_data.get('url', 'Unknown URL')}")
         with self.driver.session() as session:
             result = session.execute_write(self._create_repository, repo_data)
+            logger.info(f"Successfully stored repository with ID: {result}")
             return result
     
     @staticmethod
@@ -65,8 +83,10 @@ class GraphDatabaseManager:
         return result.single()['repo_id']
     
     def store_commit(self, commit_data: Dict[str, Any], repo_url: str):
+        logger.debug(f"Storing commit {commit_data.get('sha', 'Unknown SHA')} for repo {repo_url}")
         with self.driver.session() as session:
             session.execute_write(self._create_commit, commit_data, repo_url)
+            logger.debug(f"Successfully stored commit {commit_data.get('sha', 'Unknown SHA')}")
     
     @staticmethod
     def _create_commit(tx, commit_data, repo_url):
@@ -189,8 +209,11 @@ class GraphDatabaseManager:
         tx.run(query, from_file=from_file, to_file=to_file, dep_type=dep_type)
     
     def get_architecture_insights(self, repo_url: str) -> Dict[str, Any]:
+        logger.info(f"Getting architecture insights for {repo_url}")
         with self.driver.session() as session:
-            return session.execute_read(self._analyze_architecture, repo_url)
+            result = session.execute_read(self._analyze_architecture, repo_url)
+            logger.info(f"Retrieved architecture insights: {len(result.get('most_changed_files', []))} changed files, {len(result.get('coupled_files', []))} coupled files")
+            return result
     
     @staticmethod
     def _analyze_architecture(tx, repo_url):

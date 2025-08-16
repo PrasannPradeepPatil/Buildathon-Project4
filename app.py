@@ -2,8 +2,20 @@ from flask import Flask, render_template, request, jsonify
 import os
 import tempfile
 import shutil
+import logging
 from git_analyzer import GitAnalyzer
 from database import Database
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Import enhanced components with graceful fallback
 graph_db_available = False
@@ -112,20 +124,34 @@ def health_check():
 def analyze_repository_enhanced():
     try:
         repo_url = request.json.get('repo_url')
+        logger.info(f"Starting enhanced analysis for repository: {repo_url}")
+        
         if not repo_url:
+            logger.warning("Repository URL missing in enhanced analysis request")
             return jsonify({'error': 'Repository URL is required'}), 400
         
         if not graph_db_available or not graph_db or not hasattr(graph_db, 'driver') or not graph_db.driver:
+            logger.error("Graph database not available for enhanced analysis")
             return jsonify({'error': 'Enhanced analysis requires graph database connection'}), 503
         
         temp_dir = tempfile.mkdtemp()
+        logger.info(f"Created temporary directory: {temp_dir}")
         
         try:
             if not EnhancedGitAnalyzer:
+                logger.error("Enhanced analyzer not available")
                 return jsonify({'error': 'Enhanced analyzer not available'}), 503
+                
+            logger.info("Initializing enhanced analyzer with graph database")
             analyzer = EnhancedGitAnalyzer(graph_db)
+            
+            logger.info("Starting enhanced repository analysis")
             repo_data = analyzer.analyze_repository_full(repo_url, temp_dir)
+            logger.info(f"Enhanced analysis complete: {len(repo_data.get('commits', []))} commits processed")
+            
+            logger.info("Storing enhanced analysis results")
             analysis_id = db.store_analysis(repo_url, repo_data)
+            logger.info(f"Enhanced analysis stored with ID: {analysis_id}")
             
             return jsonify({
                 'success': True,
@@ -136,8 +162,10 @@ def analyze_repository_enhanced():
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
                 
     except Exception as e:
+        logger.error(f"Enhanced analysis failed for {repo_url}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/architecture-analysis', methods=['POST'])
@@ -255,13 +283,19 @@ def ask_semantic_question():
         repo_url = request.json.get('repo_url')
         context = request.json.get('context', {})
         
+        logger.info(f"Semantic question asked for {repo_url}: {question}")
+        
         if not question or not repo_url:
+            logger.warning("Missing question or repository URL in semantic query")
             return jsonify({'error': 'Question and repository URL are required'}), 400
         
         if not semantic_engine:
+            logger.error("Semantic engine not available")
             return jsonify({'error': 'Semantic engine not available'}), 503
         
+        logger.info("Processing semantic question with engine")
         answer = semantic_engine.answer_question(question, repo_url, context)
+        logger.info(f"Semantic question processed successfully, answer type: {answer.get('answer_type')}")
         
         return jsonify({
             'success': True,
@@ -269,6 +303,7 @@ def ask_semantic_question():
         })
         
     except Exception as e:
+        logger.error(f"Semantic question failed for {repo_url}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/analyze-with-llm', methods=['POST'])
@@ -277,60 +312,88 @@ def analyze_with_llm():
         repo_url = request.json.get('repo_url')
         analyze_prs = request.json.get('analyze_prs', False)
         
+        logger.info(f"Starting LLM analysis for repository: {repo_url}, analyze_prs: {analyze_prs}")
+        
         if not repo_url:
+            logger.warning("Repository URL missing in LLM analysis request")
             return jsonify({'error': 'Repository URL is required'}), 400
         
         # Check for OpenAI API key
         openai_key = os.getenv('OPENAI_API_KEY')
         if not openai_key:
+            logger.error("OpenAI API key not found for LLM analysis")
             return jsonify({
                 'error': 'OpenAI API key required for AI analysis. Please add OPENAI_API_KEY to your secrets.',
                 'suggestion': 'Add your OpenAI API key in Replit Secrets (Tools → Secrets)'
             }), 503
         
         if not llm_analyzer:
+            logger.error("LLM analyzer not available")
             return jsonify({'error': 'LLM analyzer not available'}), 503
         
         temp_dir = tempfile.mkdtemp()
+        logger.info(f"Created temporary directory: {temp_dir}")
         
         try:
             # Enhanced analysis with embeddings
+            logger.info("Starting enhanced repository analysis")
             analyzer = EnhancedGitAnalyzer(vector_db)
             repo_data = analyzer.analyze_repository_full(repo_url, temp_dir, max_commits=100)
+            logger.info(f"Repository analysis complete: {len(repo_data.get('commits', []))} commits analyzed")
             
             # Analyze PRs if requested and available
             pr_analysis = []
             if analyze_prs:
+                logger.info("Starting PR analysis")
                 prs = llm_analyzer.fetch_github_prs(repo_url, limit=20)
-                for pr in prs:
+                logger.info(f"Fetched {len(prs)} PRs for analysis")
+                
+                for i, pr in enumerate(prs):
+                    logger.debug(f"Analyzing PR {i+1}/{len(prs)}: #{pr.get('number')}")
                     pr_analysis.append(llm_analyzer.analyze_pull_request(pr))
                     if vector_db:
                         vector_db.store_pull_request(pr, repo_url)
+                
+                logger.info(f"PR analysis complete: {len(pr_analysis)} PRs analyzed")
             
             # Generate narrative
+            logger.info("Generating change narrative")
             narrative = llm_analyzer.generate_change_narrative(repo_data['commits'])
+            logger.info("Change narrative generation complete")
             
             # Store in database
+            logger.info("Storing analysis results in database")
             analysis_id = db.store_analysis(repo_url, {
                 **repo_data,
                 'pr_analysis': pr_analysis,
                 'narrative': narrative
             })
+            logger.info(f"Analysis stored with ID: {analysis_id}")
             
+            # Get semantic clusters if available
+            semantic_clusters = None
+            if vector_db:
+                logger.info("Identifying semantic clusters")
+                semantic_clusters = vector_db.identify_semantic_clusters(repo_url)
+                logger.info(f"Semantic clustering complete: {semantic_clusters.get('num_clusters', 0)} clusters found")
+            
+            logger.info(f"LLM analysis complete for {repo_url}")
             return jsonify({
                 'success': True,
                 'analysis_id': analysis_id,
                 'repository': repo_data['repository'],
                 'narrative': narrative,
                 'pr_count': len(pr_analysis),
-                'semantic_clusters': vector_db.identify_semantic_clusters(repo_url) if vector_db else None
+                'semantic_clusters': semantic_clusters
             })
             
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
                 
     except Exception as e:
+        logger.error(f"LLM analysis failed for {repo_url}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/file-evolution', methods=['POST'])
