@@ -249,32 +249,51 @@ class EnhancedGitAnalyzer:
                     }
                     structure_data['classes'].append(class_data)
                 
-                elif isinstance(node, ast.FunctionDef) and not any(isinstance(parent, ast.ClassDef) for parent in ast.walk(tree)):
-                    func_data = {
-                        'name': node.name,
-                        'parameters': [arg.arg for arg in node.args.args],
-                        'line_start': node.lineno,
-                        'line_end': node.end_lineno or node.lineno,
-                        'complexity': self._calculate_complexity(node)
-                    }
-                    structure_data['functions'].append(func_data)
+                elif isinstance(node, ast.FunctionDef):
+                    # Check if this function is not inside a class
+                    is_method = False
+                    for parent in ast.walk(tree):
+                        if isinstance(parent, ast.ClassDef) and node in parent.body:
+                            is_method = True
+                            break
+                    
+                    if not is_method:
+                        func_data = {
+                            'name': node.name,
+                            'parameters': [arg.arg for arg in node.args.args] if node.args.args else [],
+                            'line_start': node.lineno,
+                            'line_end': node.end_lineno or node.lineno,
+                            'complexity': self._calculate_complexity(node)
+                        }
+                        structure_data['functions'].append(func_data)
                 
                 elif isinstance(node, (ast.Import, ast.ImportFrom)):
-                    if isinstance(node, ast.Import):
-                        for alias in node.names:
-                            structure_data['imports'].append(alias.name)
-                    else:
-                        if node.module:
-                            structure_data['imports'].append(node.module)
+                    try:
+                        if isinstance(node, ast.Import):
+                            for alias in node.names:
+                                if hasattr(alias, 'name') and alias.name:
+                                    structure_data['imports'].append(alias.name)
+                        else:
+                            if hasattr(node, 'module') and node.module:
+                                structure_data['imports'].append(node.module)
+                    except Exception as import_error:
+                        logger.warning(f"Error processing import in {file_path}: {import_error}")
+                        continue
             
             if self.graph_db:
-                self.graph_db.store_code_structure(file_path, structure_data)
-                
-                for imp in structure_data['imports']:
-                    if '.' not in imp or imp.startswith('.'):
-                        continue
-                    potential_file = imp.replace('.', '/') + '.py'
-                    self.graph_db.store_dependency(file_path, potential_file, 'import')
+                try:
+                    self.graph_db.store_code_structure(file_path, structure_data)
+                    
+                    for imp in structure_data['imports']:
+                        try:
+                            if not imp or '.' not in imp or imp.startswith('.'):
+                                continue
+                            potential_file = imp.replace('.', '/') + '.py'
+                            self.graph_db.store_dependency(file_path, potential_file, 'import')
+                        except Exception as dep_error:
+                            logger.warning(f"Error storing dependency {imp}: {dep_error}")
+                except Exception as store_error:
+                    logger.warning(f"Error storing code structure for {file_path}: {store_error}")
                     
         except Exception as e:
             print(f"Error analyzing Python file {file_path}: {e}")
