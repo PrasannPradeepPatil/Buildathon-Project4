@@ -15,4 +15,29 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "python3 app.py"
+
+[[workflows.workflow]]
+name = "Debug Python"
+author = 3347991
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "which python"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "which python3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "ls -la /usr/bin/python*"
