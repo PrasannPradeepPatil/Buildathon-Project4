@@ -1,0 +1,55 @@
+modules = ["python-3.11"]
+[nix]
+channel = "stable-24_05"
+packages = ["bash", "cargo", "glibcLocales", "libiconv", "rustc"]
+
+[nix.pkgs]
+python3 = "latest"
+python3Packages.pip = "latest"
+python3Packages.flask = "latest"
+python3Packages.gitpython = "latest"
+python3Packages.requests = "latest"
+
+[deployment]
+run = ["python3", "app.py"]
+
+[workflows]
+runButton = "Run Flask App"
+
+[[workflows.workflow]]
+name = "Run Flask App"
+author = 3347991
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
+
+[[workflows.workflow]]
+name = "Debug Python"
+author = 3347991
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "which python"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "which python3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "ls -la /usr/bin/python*"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
