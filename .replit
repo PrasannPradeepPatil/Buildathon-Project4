@@ -1,9 +1,12 @@
-run = "app.py"
+run = "python3 app.py"
 [nix]
-channel = "stable-25_05"
+channel = "stable-24_05"
+
+[nix.env]
+PYTHONPATH = "$REPL_HOME"
 
 [deployment]
-run = ["python", "app.py"]
+run = ["python3", "app.py"]
 
 [workflows]
 runButton = "Run Flask App"
