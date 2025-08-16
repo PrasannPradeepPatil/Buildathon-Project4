@@ -1,9 +1,10 @@
 
 [nix]
-channel = "stable-25_05"
+channel = "stable-24_05"
 
 [nix.pkgs]
-python3 = "latest"
+python311 = "latest"
+python311Packages.pip = "latest"
 
 [deployment]
 run = ["python3", "app.py"]
@@ -18,7 +19,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "python3.11 app.py"
 
 [[workflows.workflow]]
 name = "Debug Python"
