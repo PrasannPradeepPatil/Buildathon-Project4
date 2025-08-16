@@ -37,10 +37,10 @@ async function analyzeRepository() {
 
     currentRepoUrl = repoUrl;
 
-    // Show initial loading state
-    updateProgress('cloning', 'Starting repository analysis...');
+    // Hide results and errors first, then show loading
     hideResults();
     hideError();
+    updateProgress('cloning', 'Starting repository analysis...');
 
     try {
         let endpoint = '/analyze';
@@ -261,8 +261,14 @@ function displayResults(data, analysisType = 'basic') {
         displayCommits(data.commits);
     }
 
-    // Enhanced analysis features
+    // Show/hide enhanced sections based on analysis type
+    const enhancedSections = document.querySelector('.enhanced-sections');
+    const interactiveSections = document.querySelector('.interactive-sections');
+    
     if (analysisType === 'enhanced' || analysisType === 'llm') {
+        if (enhancedSections) enhancedSections.style.display = 'block';
+        if (interactiveSections) interactiveSections.style.display = 'block';
+        
         if (data.file_structure) {
             displayFileStructure(data.file_structure);
         }
@@ -290,6 +296,10 @@ function displayResults(data, analysisType = 'basic') {
         if (data.semantic_clusters) {
             displaySemanticClusters(data.semantic_clusters);
         }
+    } else {
+        // Hide enhanced sections for basic analysis
+        if (enhancedSections) enhancedSections.style.display = 'none';
+        if (interactiveSections) interactiveSections.style.display = 'none';
     }
 
     showResults();
@@ -609,8 +619,19 @@ document.getElementById('repo-url').addEventListener('keypress', function(e) {
     }
 });
 
-// Allow Enter key for semantic search
+// Initialize page state and event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure proper initial state
+    hideLoading();
+    hideResults();
+    hideError();
+    
+    // Hide enhanced sections initially
+    const enhancedSections = document.querySelector('.enhanced-sections');
+    const interactiveSections = document.querySelector('.interactive-sections');
+    if (enhancedSections) enhancedSections.style.display = 'none';
+    if (interactiveSections) interactiveSections.style.display = 'none';
+    
     const semanticQuery = document.getElementById('semantic-query');
     if (semanticQuery) {
         semanticQuery.addEventListener('keypress', function(e) {

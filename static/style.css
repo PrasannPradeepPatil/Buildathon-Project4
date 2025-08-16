@@ -337,6 +337,7 @@ button:disabled {
 /* Enhanced Analysis Styles */
 .enhanced-sections {
     margin-top: 30px;
+    display: none;
 }
 
 .enhanced-sections > div {
@@ -399,6 +400,7 @@ button:disabled {
 /* Interactive Sections */
 .interactive-sections {
     margin-top: 30px;
+    display: none;
 }
 
 .interactive-sections > div {
