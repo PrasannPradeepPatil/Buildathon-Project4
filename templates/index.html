@@ -19,6 +19,19 @@
                     <label for="repo-url">Repository URL:</label>
                     <input type="url" id="repo-url" placeholder="https://github.com/user/repo.git" required>
                 </div>
+                <div class="form-group">
+                    <label for="analysis-type">Analysis Type:</label>
+                    <select id="analysis-type">
+                        <option value="basic">Basic Analysis</option>
+                        <option value="enhanced">Enhanced Analysis (Graph DB)</option>
+                        <option value="llm">AI-Powered Analysis</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="analyze-prs"> Analyze Pull Requests (LLM mode only)
+                    </label>
+                </div>
                 <button id="analyze-btn" onclick="analyzeRepository()">Analyze Repository</button>
             </div>
             
@@ -59,6 +72,69 @@
                 <div class="commits-section">
                     <h3>📝 Recent Commits</h3>
                     <div id="commits-list"></div>
+                </div>
+                
+                <div class="enhanced-sections">
+                    <div class="file-structure-section">
+                        <h3>📁 File Structure</h3>
+                        <div id="file-structure-content"></div>
+                    </div>
+                    
+                    <div class="dependencies-section">
+                        <h3>📦 Dependencies</h3>
+                        <div id="dependencies-content"></div>
+                    </div>
+                    
+                    <div class="architecture-metrics-section">
+                        <h3>🏗️ Architecture Metrics</h3>
+                        <div id="architecture-metrics-content"></div>
+                    </div>
+                    
+                    <div class="evolution-patterns-section">
+                        <h3>📈 Evolution Patterns</h3>
+                        <div id="evolution-patterns-content"></div>
+                    </div>
+                    
+                    <div class="narrative-section">
+                        <h3>📖 AI Narrative</h3>
+                        <div id="narrative-content"></div>
+                    </div>
+                    
+                    <div class="pr-analysis-section">
+                        <h3>🔀 Pull Request Analysis</h3>
+                        <div id="pr-analysis-content"></div>
+                    </div>
+                    
+                    <div class="semantic-clusters-section">
+                        <h3>🎯 Semantic Clusters</h3>
+                        <div id="semantic-clusters-content"></div>
+                    </div>
+                </div>
+                
+                <div class="interactive-sections">
+                    <div class="architecture-analysis-section">
+                        <h3>🏛️ Architecture Analysis</h3>
+                        <button onclick="analyzeArchitecture()">Analyze Architecture</button>
+                        <div id="architecture-analysis-content"></div>
+                    </div>
+                    
+                    <div class="semantic-search-section">
+                        <h3>🔍 Semantic Search</h3>
+                        <div class="search-controls">
+                            <input type="text" id="semantic-query" placeholder="Search commits semantically...">
+                            <button onclick="performSemanticSearch()">Search</button>
+                        </div>
+                        <div id="semantic-results-content"></div>
+                    </div>
+                    
+                    <div class="semantic-qa-section">
+                        <h3>🤖 Ask About Repository</h3>
+                        <div class="qa-controls">
+                            <input type="text" id="semantic-question" placeholder="Ask a question about the repository...">
+                            <button onclick="askSemanticQuestion()">Ask</button>
+                        </div>
+                        <div id="semantic-answer-content"></div>
+                    </div>
                 </div>
             </div>
             

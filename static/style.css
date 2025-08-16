@@ -223,48 +223,186 @@ button:disabled {
 }
 
 .error {
-    background: #fff5f5;
-    border: 1px solid #fed7d7;
-    color: #c53030;
-    padding: 20px;
+    background: #ffe6e6;
+    border: 1px solid #ff9999;
     border-radius: 8px;
-    margin-top: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    color: #cc0000;
 }
 
-.hidden {
-    display: none;
+.error h3 {
+    margin: 0 0 10px 0;
+    color: #cc0000;
 }
 
-.insight-item {
+/* Enhanced Analysis Styles */
+.enhanced-sections {
+    margin-top: 30px;
+}
+
+.enhanced-sections > div {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.language-item, .metric-item, .evolution-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.language-item:last-child, .metric-item:last-child, .evolution-item:last-child {
+    border-bottom: none;
+}
+
+.dependency-manager {
+    margin: 10px 0;
+}
+
+.dependency-manager h4 {
+    margin: 0 0 5px 0;
+    color: #495057;
+}
+
+.deps-list {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.narrative-text {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    line-height: 1.6;
+    border-left: 3px solid #28a745;
+}
+
+.pr-count {
+    background: #e7f3ff;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    color: #0056b3;
+}
+
+.cluster-item {
+    background: white;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border-left: 3px solid #ffc107;
+}
+
+/* Interactive Sections */
+.interactive-sections {
+    margin-top: 30px;
+}
+
+.interactive-sections > div {
+    margin: 20px 0;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.search-controls, .qa-controls {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.search-controls input, .qa-controls input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.search-controls button, .qa-controls button {
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.search-controls button:hover, .qa-controls button:hover {
+    background: #0056b3;
+}
+
+.semantic-result-item {
     background: #f8f9fa;
     padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border-left: 3px solid #17a2b8;
 }
 
-.insight-label {
-    font-weight: 600;
-    color: #555;
+.result-message {
+    font-weight: 500;
+    margin-bottom: 5px;
 }
 
-.insight-value {
-    color: #667eea;
-    font-weight: 600;
+.result-score {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.recommendation-item {
+    background: #fff3cd;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border-left: 3px solid #ffc107;
+}
+
+.semantic-answer {
+    background: #d4edda;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #28a745;
+    line-height: 1.6;
+}
+
+.architecture-analysis {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+
+select {
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+}
+
+input[type="checkbox"] {
+    margin-right: 8px;
 }
 
 @media (max-width: 768px) {
     .container {
         padding: 10px;
     }
-    
+
     header h1 {
         font-size: 2rem;
     }
-    
+
     .input-section {
         padding: 20px;
     }
-    
+
     .commit-meta {
         flex-direction: column;
         gap: 5px;
