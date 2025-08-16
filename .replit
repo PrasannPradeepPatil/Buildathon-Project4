@@ -1,6 +1,18 @@
-run = "app.py"
+
 [nix]
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "app.py"]
+run = ["python3", "app.py"]
+
+[workflows]
+runButton = "Run Flask App"
+
+[[workflows.workflow]]
+name = "Run Flask App"
+author = 3347991
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
