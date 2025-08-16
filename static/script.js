@@ -37,8 +37,8 @@ async function analyzeRepository() {
 
     currentRepoUrl = repoUrl;
 
-    // Show loading state
-    showLoading();
+    // Show initial loading state
+    updateProgress('cloning', 'Starting repository analysis...');
     hideResults();
     hideError();
 
@@ -50,16 +50,22 @@ async function analyzeRepository() {
         switch (analysisType) {
             case 'enhanced':
                 endpoint = '/analyze-enhanced';
+                updateProgress('embeddings', 'Preparing enhanced analysis with graph database...');
                 break;
             case 'llm':
                 endpoint = '/analyze-with-llm';
                 requestBody.analyze_prs = analyzePRs;
+                updateProgress('embeddings', 'Preparing AI-powered analysis...');
                 break;
             case 'basic':
             default:
                 endpoint = '/analyze';
+                updateProgress('commits', 'Performing basic analysis...');
                 break;
         }
+
+        // Start periodic progress updates
+        const progressInterval = startProgressUpdates(analysisType, analyzePRs);
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -69,19 +75,62 @@ async function analyzeRepository() {
             body: JSON.stringify(requestBody)
         });
 
+        // Clear progress interval
+        clearInterval(progressInterval);
+
         const data = await response.json();
 
         if (data.success) {
-            currentAnalysis = data.data || data;
-            displayResults(currentAnalysis, analysisType);
+            updateProgress('complete', 'Analysis completed successfully!');
+            setTimeout(() => {
+                currentAnalysis = data.data || data;
+                displayResults(currentAnalysis, analysisType);
+                hideLoading();
+            }, 1000);
         } else {
             showError(data.error || 'Analysis failed');
         }
     } catch (error) {
         showError('Network error: ' + error.message);
-    } finally {
-        hideLoading();
     }
+}
+
+function startProgressUpdates(analysisType, analyzePRs) {
+    let step = 0;
+    const steps = getProgressSteps(analysisType, analyzePRs);
+    
+    return setInterval(() => {
+        if (step < steps.length) {
+            updateProgress(steps[step].key, steps[step].message);
+            step++;
+        }
+    }, 3000); // Update every 3 seconds
+}
+
+function getProgressSteps(analysisType, analyzePRs) {
+    const baseSteps = [
+        { key: 'cloning', message: 'Cloning repository...' },
+        { key: 'commits', message: 'Analyzing commit history...' },
+        { key: 'files', message: 'Processing file structure...' }
+    ];
+
+    if (analysisType === 'enhanced' || analysisType === 'llm') {
+        baseSteps.push(
+            { key: 'dependencies', message: 'Analyzing dependencies...' },
+            { key: 'embeddings', message: 'Generating semantic embeddings...' }
+        );
+    }
+
+    if (analysisType === 'llm') {
+        if (analyzePRs) {
+            baseSteps.push({ key: 'prs', message: 'Analyzing pull requests...' });
+        }
+        baseSteps.push({ key: 'narrative', message: 'Generating AI narrative...' });
+    }
+
+    baseSteps.push({ key: 'storing', message: 'Storing analysis results...' });
+
+    return baseSteps;
 }
 
 async function analyzeArchitecture() {
@@ -90,7 +139,7 @@ async function analyzeArchitecture() {
         return;
     }
 
-    showLoading();
+    updateProgress('embeddings', 'Analyzing repository architecture...');
 
     try {
         const response = await fetch('/architecture-analysis', {
@@ -104,14 +153,16 @@ async function analyzeArchitecture() {
         const data = await response.json();
 
         if (data.success) {
-            displayArchitectureAnalysis(data.analysis);
+            updateProgress('complete', 'Architecture analysis complete!');
+            setTimeout(() => {
+                displayArchitectureAnalysis(data.analysis);
+                hideLoading();
+            }, 500);
         } else {
             showError(data.error || 'Architecture analysis failed');
         }
     } catch (error) {
         showError('Network error: ' + error.message);
-    } finally {
-        hideLoading();
     }
 }
 
@@ -122,6 +173,12 @@ async function performSemanticSearch() {
         alert('Please enter a search query and analyze a repository first');
         return;
     }
+
+    // Show mini loading indicator for search
+    const searchBtn = event.target;
+    const originalText = searchBtn.textContent;
+    searchBtn.textContent = 'Searching...';
+    searchBtn.disabled = true;
 
     try {
         const response = await fetch('/semantic-search', {
@@ -144,6 +201,9 @@ async function performSemanticSearch() {
         }
     } catch (error) {
         showError('Network error: ' + error.message);
+    } finally {
+        searchBtn.textContent = originalText;
+        searchBtn.disabled = false;
     }
 }
 
@@ -300,14 +360,66 @@ function displayCommits(commits) {
     });
 }
 
-function showLoading() {
-    document.getElementById('loading').classList.remove('hidden');
+function showLoading(message = 'Analyzing repository... This may take a moment.') {
+    const loadingDiv = document.getElementById('loading');
+    const loadingText = loadingDiv.querySelector('p');
+    loadingText.textContent = message;
+    loadingDiv.classList.remove('hidden');
     document.getElementById('analyze-btn').disabled = true;
 }
 
 function hideLoading() {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('analyze-btn').disabled = false;
+}
+
+function updateProgress(step, message) {
+    const progressSteps = {
+        'cloning': 'Cloning repository...',
+        'commits': 'Analyzing commits and history...',
+        'files': 'Processing file structure...',
+        'dependencies': 'Analyzing dependencies...',
+        'embeddings': 'Generating semantic embeddings...',
+        'prs': 'Analyzing pull requests...',
+        'narrative': 'Generating AI narrative...',
+        'storing': 'Storing analysis results...',
+        'complete': 'Analysis complete!'
+    };
+    
+    const customMessage = message || progressSteps[step] || 'Processing...';
+    showLoading(customMessage);
+    
+    // Update progress bar and steps
+    updateProgressVisual(step);
+}
+
+function updateProgressVisual(currentStep) {
+    const stepOrder = ['cloning', 'commits', 'files', 'embeddings', 'complete'];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    
+    if (currentIndex === -1) return;
+    
+    // Update progress bar
+    const progressFill = document.querySelector('.progress-fill');
+    if (progressFill) {
+        const percentage = ((currentIndex + 1) / stepOrder.length) * 100;
+        progressFill.style.width = `${percentage}%`;
+    }
+    
+    // Update step indicators
+    const steps = document.querySelectorAll('.step');
+    steps.forEach((stepEl, index) => {
+        const stepKey = stepEl.getAttribute('data-step');
+        const stepIndex = stepOrder.indexOf(stepKey);
+        
+        stepEl.classList.remove('active', 'completed');
+        
+        if (stepIndex < currentIndex) {
+            stepEl.classList.add('completed');
+        } else if (stepIndex === currentIndex) {
+            stepEl.classList.add('active');
+        }
+    });
 }
 
 function showResults() {

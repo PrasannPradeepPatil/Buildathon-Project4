@@ -39,6 +39,18 @@
             <div id="loading" class="loading hidden">
                 <div class="spinner"></div>
                 <p>Analyzing repository... This may take a moment.</p>
+                <div class="progress-indicator">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="step active" data-step="cloning">Repository</div>
+                        <div class="step" data-step="commits">Commits</div>
+                        <div class="step" data-step="files">Files</div>
+                        <div class="step" data-step="embeddings">AI Analysis</div>
+                        <div class="step" data-step="complete">Complete</div>
+                    </div>
+                </div>
             </div>
             
             <div id="results" class="results hidden">
