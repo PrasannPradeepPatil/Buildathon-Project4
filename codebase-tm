@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Codebase Time Machine CLI Launcher
+# This script sets up the environment and launches the CLI
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check if virtual environment exists
+if [ ! -d "$SCRIPT_DIR/venv" ]; then
+    echo "Virtual environment not found. Creating one..."
+    python3 -m venv "$SCRIPT_DIR/venv"
+    source "$SCRIPT_DIR/venv/bin/activate"
+    pip install -r "$SCRIPT_DIR/requirements.txt"
+else
+    source "$SCRIPT_DIR/venv/bin/activate"
+fi
+
+# Check if .env file exists
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    echo "Warning: .env file not found. Creating from template..."
+    cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
+    echo "Please edit .env file with your API keys before running."
+    echo "Required: OPENAI_API_KEY for embeddings"
+    echo "Optional: GITHUB_TOKEN for PR analysis"
+    exit 1
+fi
+
+# Run the CLI with all arguments passed to this script
+python "$SCRIPT_DIR/cli.py" "$@"
