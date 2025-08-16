@@ -48,3 +48,7 @@ args = "python3 --version"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "ls -la /usr/bin/python*"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
