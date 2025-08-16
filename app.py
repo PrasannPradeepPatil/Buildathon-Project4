@@ -4,12 +4,32 @@ import tempfile
 import shutil
 from git_analyzer import GitAnalyzer
 from database import Database
-from graph_database import GraphDatabaseManager
-from enhanced_git_analyzer import EnhancedGitAnalyzer
-from architecture_analyzer import ArchitectureAnalyzer
-from vector_graph_database import VectorGraphDatabase
-from llm_code_analyzer import LLMCodeAnalyzer
-from semantic_query_engine import SemanticQueryEngine
+
+# Import enhanced components with graceful fallback
+graph_db_available = False
+enhanced_features_available = False
+
+try:
+    from graph_database import GraphDatabaseManager
+    from enhanced_git_analyzer import EnhancedGitAnalyzer
+    from architecture_analyzer import ArchitectureAnalyzer
+    graph_db_available = True
+except ImportError as e:
+    print(f"Graph database features not available: {e}")
+    GraphDatabaseManager = None
+    EnhancedGitAnalyzer = None
+    ArchitectureAnalyzer = None
+
+try:
+    from vector_graph_database import VectorGraphDatabase
+    from llm_code_analyzer import LLMCodeAnalyzer
+    from semantic_query_engine import SemanticQueryEngine
+    enhanced_features_available = True
+except ImportError as e:
+    print(f"Enhanced AI features not available: {e}")
+    VectorGraphDatabase = None
+    LLMCodeAnalyzer = None
+    SemanticQueryEngine = None
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
@@ -21,16 +41,27 @@ vector_db = None
 llm_analyzer = None
 semantic_engine = None
 
-try:
-    graph_db = GraphDatabaseManager()
-    vector_db = VectorGraphDatabase()
-    llm_analyzer = LLMCodeAnalyzer()
-    semantic_engine = SemanticQueryEngine(vector_db, llm_analyzer)
-    print("Connected to Neo4j graph database with vector support")
-except Exception as e:
-    print(f"Graph database not available: {e}")
-    graph_db = None
-    vector_db = None
+# Initialize graph database if available
+if graph_db_available and GraphDatabaseManager:
+    try:
+        graph_db = GraphDatabaseManager()
+        print("Connected to Neo4j graph database")
+    except Exception as e:
+        print(f"Graph database connection failed: {e}")
+        graph_db = None
+
+# Initialize enhanced features if available
+if enhanced_features_available and all([VectorGraphDatabase, LLMCodeAnalyzer, SemanticQueryEngine]):
+    try:
+        vector_db = VectorGraphDatabase()
+        llm_analyzer = LLMCodeAnalyzer()
+        semantic_engine = SemanticQueryEngine(vector_db, llm_analyzer)
+        print("Enhanced AI features initialized")
+    except Exception as e:
+        print(f"Enhanced features initialization failed: {e}")
+        vector_db = None
+        llm_analyzer = None
+        semantic_engine = None
 
 @app.route('/')
 def index():
@@ -67,7 +98,14 @@ def analyze_repository():
 def health_check():
     return jsonify({
         'status': 'healthy',
-        'graph_db': 'connected' if graph_db and graph_db.driver else 'disconnected'
+        'graph_db': 'connected' if graph_db and hasattr(graph_db, 'driver') and graph_db.driver else 'disconnected',
+        'vector_db': 'available' if vector_db else 'unavailable',
+        'llm_analyzer': 'available' if llm_analyzer else 'unavailable',
+        'features': {
+            'basic_analysis': True,
+            'enhanced_analysis': graph_db_available and graph_db is not None,
+            'ai_analysis': enhanced_features_available and llm_analyzer is not None
+        }
     })
 
 @app.route('/analyze-enhanced', methods=['POST'])
@@ -77,12 +115,14 @@ def analyze_repository_enhanced():
         if not repo_url:
             return jsonify({'error': 'Repository URL is required'}), 400
         
-        if not graph_db or not graph_db.driver:
-            return jsonify({'error': 'Graph database not available'}), 503
+        if not graph_db_available or not graph_db or not hasattr(graph_db, 'driver') or not graph_db.driver:
+            return jsonify({'error': 'Enhanced analysis requires graph database connection'}), 503
         
         temp_dir = tempfile.mkdtemp()
         
         try:
+            if not EnhancedGitAnalyzer:
+                return jsonify({'error': 'Enhanced analyzer not available'}), 503
             analyzer = EnhancedGitAnalyzer(graph_db)
             repo_data = analyzer.analyze_repository_full(repo_url, temp_dir)
             analysis_id = db.store_analysis(repo_url, repo_data)

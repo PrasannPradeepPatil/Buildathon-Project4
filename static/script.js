@@ -1,27 +1,51 @@
 let currentAnalysis = null;
 let currentRepoUrl = null;
 
+async function checkFeatures() {
+    try {
+        const response = await fetch('/health');
+        const health = await response.json();
+        return health.features || {};
+    } catch (error) {
+        console.error('Error checking features:', error);
+        return { basic_analysis: true, enhanced_analysis: false, ai_analysis: false };
+    }
+}
+
 async function analyzeRepository() {
     const repoUrl = document.getElementById('repo-url').value.trim();
     const analysisType = document.getElementById('analysis-type').value;
     const analyzePRs = document.getElementById('analyze-prs').checked;
-    
+
     if (!repoUrl) {
-        alert('Please enter a repository URL');
+        showError('Please enter a repository URL');
         return;
     }
-    
+
+    // Check feature availability
+    const features = await checkFeatures();
+
+    if (analysisType === 'enhanced' && !features.enhanced_analysis) {
+        showError('Enhanced analysis is not available. Graph database is not connected.');
+        return;
+    }
+
+    if (analysisType === 'llm' && !features.ai_analysis) {
+        showError('AI-powered analysis is not available. LLM components are not initialized.');
+        return;
+    }
+
     currentRepoUrl = repoUrl;
-    
+
     // Show loading state
     showLoading();
     hideResults();
     hideError();
-    
+
     try {
         let endpoint = '/analyze';
         let requestBody = { repo_url: repoUrl };
-        
+
         // Choose endpoint based on analysis type
         switch (analysisType) {
             case 'enhanced':
@@ -36,7 +60,7 @@ async function analyzeRepository() {
                 endpoint = '/analyze';
                 break;
         }
-        
+
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -44,9 +68,9 @@ async function analyzeRepository() {
             },
             body: JSON.stringify(requestBody)
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             currentAnalysis = data.data || data;
             displayResults(currentAnalysis, analysisType);
@@ -65,9 +89,9 @@ async function analyzeArchitecture() {
         alert('Please analyze a repository first');
         return;
     }
-    
+
     showLoading();
-    
+
     try {
         const response = await fetch('/architecture-analysis', {
             method: 'POST',
@@ -76,9 +100,9 @@ async function analyzeArchitecture() {
             },
             body: JSON.stringify({ repo_url: currentRepoUrl })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayArchitectureAnalysis(data.analysis);
         } else {
@@ -93,12 +117,12 @@ async function analyzeArchitecture() {
 
 async function performSemanticSearch() {
     const query = document.getElementById('semantic-query').value.trim();
-    
+
     if (!query || !currentRepoUrl) {
         alert('Please enter a search query and analyze a repository first');
         return;
     }
-    
+
     try {
         const response = await fetch('/semantic-search', {
             method: 'POST',
@@ -110,9 +134,9 @@ async function performSemanticSearch() {
                 repo_url: currentRepoUrl 
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displaySemanticResults(data);
         } else {
@@ -125,12 +149,12 @@ async function performSemanticSearch() {
 
 async function askSemanticQuestion() {
     const question = document.getElementById('semantic-question').value.trim();
-    
+
     if (!question || !currentRepoUrl) {
         alert('Please enter a question and analyze a repository first');
         return;
     }
-    
+
     try {
         const response = await fetch('/ask-semantic', {
             method: 'POST',
@@ -142,9 +166,9 @@ async function askSemanticQuestion() {
                 repo_url: currentRepoUrl 
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displaySemanticAnswer(data.answer);
         } else {
@@ -161,67 +185,67 @@ function displayResults(data, analysisType = 'basic') {
     document.getElementById('total-commits').textContent = data.repository.total_commits || data.total_commits_analyzed || 0;
     document.getElementById('total-contributors').textContent = data.insights?.total_contributors || 0;
     document.getElementById('total-files').textContent = data.files?.length || data.file_structure?.total_files || 0;
-    
+
     // Display insights
     if (data.insights) {
         displayInsights(data.insights);
     }
-    
+
     // Display contributors
     if (data.contributors) {
         displayContributors(data.contributors);
     }
-    
+
     // Display commits
     if (data.commits) {
         displayCommits(data.commits);
     }
-    
+
     // Enhanced analysis features
     if (analysisType === 'enhanced' || analysisType === 'llm') {
         if (data.file_structure) {
             displayFileStructure(data.file_structure);
         }
-        
+
         if (data.dependencies) {
             displayDependencies(data.dependencies);
         }
-        
+
         if (data.architecture_metrics) {
             displayArchitectureMetrics(data.architecture_metrics);
         }
-        
+
         if (data.evolution_patterns) {
             displayEvolutionPatterns(data.evolution_patterns);
         }
-        
+
         if (data.narrative) {
             displayNarrative(data.narrative);
         }
-        
+
         if (data.pr_count) {
             displayPRAnalysis(data.pr_count);
         }
-        
+
         if (data.semantic_clusters) {
             displaySemanticClusters(data.semantic_clusters);
         }
     }
-    
+
     showResults();
 }
 
 function displayInsights(insights) {
     const container = document.getElementById('insights-content');
     container.innerHTML = '';
-    
+
     const insightItems = [
         { label: 'Most Active Contributor', value: insights.most_active_contributor },
         { label: 'Most Common Commit Type', value: insights.most_common_commit_type },
         { label: 'Avg Files per Commit', value: insights.avg_files_per_commit?.toFixed(1) || '0' },
         { label: 'Total Contributors', value: insights.total_contributors }
     ];
-    
+
     insightItems.forEach(item => {
         const div = document.createElement('div');
         div.className = 'insight-item';
@@ -236,7 +260,7 @@ function displayInsights(insights) {
 function displayContributors(contributors) {
     const container = document.getElementById('contributors-list');
     container.innerHTML = '';
-    
+
     contributors.slice(0, 10).forEach(contributor => {
         const div = document.createElement('div');
         div.className = 'contributor-item';
@@ -254,14 +278,14 @@ function displayContributors(contributors) {
 function displayCommits(commits) {
     const container = document.getElementById('commits-list');
     container.innerHTML = '';
-    
+
     commits.slice(0, 20).forEach(commit => {
         const div = document.createElement('div');
         div.className = 'commit-item';
-        
+
         const date = new Date(commit.date).toLocaleDateString();
         const time = new Date(commit.date).toLocaleTimeString();
-        
+
         div.innerHTML = `
             <div class="commit-message">${commit.message}</div>
             <div class="commit-meta">
@@ -297,13 +321,13 @@ function hideResults() {
 function displayFileStructure(fileStructure) {
     const container = document.getElementById('file-structure-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     const languageList = Object.entries(fileStructure.by_language)
         .sort(([,a], [,b]) => b - a)
         .slice(0, 10);
-    
+
     languageList.forEach(([language, count]) => {
         const div = document.createElement('div');
         div.className = 'language-item';
@@ -318,9 +342,9 @@ function displayFileStructure(fileStructure) {
 function displayDependencies(dependencies) {
     const container = document.getElementById('dependencies-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     Object.entries(dependencies.package_managers).forEach(([manager, deps]) => {
         if (deps.length > 0) {
             const div = document.createElement('div');
@@ -337,16 +361,16 @@ function displayDependencies(dependencies) {
 function displayArchitectureMetrics(metrics) {
     const container = document.getElementById('architecture-metrics-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     const metricItems = [
         { label: 'Modularity Score', value: metrics.modularity_score?.toFixed(1) || '0' },
         { label: 'Coupling Score', value: metrics.coupling_score?.toFixed(1) || '0' },
         { label: 'Cohesion Score', value: metrics.cohesion_score?.toFixed(1) || '0' },
         { label: 'Maintainability Index', value: metrics.maintainability_index?.toFixed(1) || '0' }
     ];
-    
+
     metricItems.forEach(item => {
         const div = document.createElement('div');
         div.className = 'metric-item';
@@ -361,13 +385,13 @@ function displayArchitectureMetrics(metrics) {
 function displayEvolutionPatterns(patterns) {
     const container = document.getElementById('evolution-patterns-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     const topContributors = Object.entries(patterns.author_contributions)
         .sort(([,a], [,b]) => b - a)
         .slice(0, 5);
-    
+
     topContributors.forEach(([author, commits]) => {
         const div = document.createElement('div');
         div.className = 'evolution-item';
@@ -382,23 +406,23 @@ function displayEvolutionPatterns(patterns) {
 function displayNarrative(narrative) {
     const container = document.getElementById('narrative-content');
     if (!container) return;
-    
+
     container.innerHTML = `<div class="narrative-text">${narrative}</div>`;
 }
 
 function displayPRAnalysis(prCount) {
     const container = document.getElementById('pr-analysis-content');
     if (!container) return;
-    
+
     container.innerHTML = `<div class="pr-count">Analyzed ${prCount} pull requests</div>`;
 }
 
 function displaySemanticClusters(clusters) {
     const container = document.getElementById('semantic-clusters-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (clusters && clusters.length > 0) {
         clusters.forEach((cluster, index) => {
             const div = document.createElement('div');
@@ -415,16 +439,16 @@ function displaySemanticClusters(clusters) {
 function displayArchitectureAnalysis(analysis) {
     const container = document.getElementById('architecture-analysis-content');
     if (!container) return;
-    
+
     container.innerHTML = `<pre class="architecture-analysis">${JSON.stringify(analysis, null, 2)}</pre>`;
 }
 
 function displaySemanticResults(data) {
     const container = document.getElementById('semantic-results-content');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (data.results && data.results.length > 0) {
         data.results.forEach(result => {
             const div = document.createElement('div');
@@ -436,7 +460,7 @@ function displaySemanticResults(data) {
             container.appendChild(div);
         });
     }
-    
+
     if (data.recommendations && data.recommendations.length > 0) {
         const recDiv = document.createElement('div');
         recDiv.innerHTML = '<h4>Recommendations:</h4>';
@@ -453,7 +477,7 @@ function displaySemanticResults(data) {
 function displaySemanticAnswer(answer) {
     const container = document.getElementById('semantic-answer-content');
     if (!container) return;
-    
+
     container.innerHTML = `<div class="semantic-answer">${answer}</div>`;
 }
 
@@ -483,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     const semanticQuestion = document.getElementById('semantic-question');
     if (semanticQuestion) {
         semanticQuestion.addEventListener('keypress', function(e) {
