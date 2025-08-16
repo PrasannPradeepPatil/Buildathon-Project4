@@ -2,6 +2,9 @@
 [nix]
 channel = "stable-25_05"
 
+[nix.pkgs]
+python3 = "latest"
+
 [deployment]
 run = ["python3", "app.py"]
 
