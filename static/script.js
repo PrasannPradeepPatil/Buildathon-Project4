@@ -98,7 +98,7 @@ async function analyzeRepository() {
 function startProgressUpdates(analysisType, analyzePRs) {
     let step = 0;
     const steps = getProgressSteps(analysisType, analyzePRs);
-    
+
     return setInterval(() => {
         if (step < steps.length) {
             updateProgress(steps[step].key, steps[step].message);
@@ -385,10 +385,10 @@ function updateProgress(step, message) {
         'storing': 'Storing analysis results...',
         'complete': 'Analysis complete!'
     };
-    
+
     const customMessage = message || progressSteps[step] || 'Processing...';
     showLoading(customMessage);
-    
+
     // Update progress bar and steps
     updateProgressVisual(step);
 }
@@ -396,24 +396,24 @@ function updateProgress(step, message) {
 function updateProgressVisual(currentStep) {
     const stepOrder = ['cloning', 'commits', 'files', 'embeddings', 'complete'];
     const currentIndex = stepOrder.indexOf(currentStep);
-    
+
     if (currentIndex === -1) return;
-    
+
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
     if (progressFill) {
         const percentage = ((currentIndex + 1) / stepOrder.length) * 100;
         progressFill.style.width = `${percentage}%`;
     }
-    
+
     // Update step indicators
     const steps = document.querySelectorAll('.step');
     steps.forEach((stepEl, index) => {
         const stepKey = stepEl.getAttribute('data-step');
         const stepIndex = stepOrder.indexOf(stepKey);
-        
+
         stepEl.classList.remove('active', 'completed');
-        
+
         if (stepIndex < currentIndex) {
             stepEl.classList.add('completed');
         } else if (stepIndex === currentIndex) {
@@ -629,3 +629,108 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// New functions for AI analysis progress
+function analyzeWithLLM() {
+    const repoUrl = document.getElementById('repoUrl').value;
+    const analyzePRs = document.getElementById('analyzePRs').checked;
+
+    if (!repoUrl) {
+        alert('Please enter a repository URL');
+        return;
+    }
+
+    const button = document.querySelector('button[onclick="analyzeWithLLM()"]');
+    const originalText = button.textContent;
+
+    // Show progress indicator
+    showProgress('Initializing AI analysis...');
+    button.disabled = true;
+
+    // Update progress messages
+    setTimeout(() => updateProgress('Cloning repository...'), 1000);
+    setTimeout(() => updateProgress('Analyzing commits with AI...'), 3000);
+    setTimeout(() => updateProgress('Generating insights...'), 8000);
+
+    fetch('/analyze-with-llm', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            repo_url: repoUrl,
+            analyze_prs: analyzePRs
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProgress();
+        if (data.success) {
+            displayLLMResults(data);
+        } else {
+            const errorMsg = data.error;
+            const suggestion = data.suggestion || '';
+
+            if (suggestion) {
+                alert(`Error: ${errorMsg}\n\nSuggestion: ${suggestion}`);
+            } else {
+                alert('Error: ' + errorMsg);
+            }
+        }
+    })
+    .catch(error => {
+        hideProgress();
+        console.error('Error:', error);
+        alert('An error occurred while analyzing the repository');
+    })
+    .finally(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+    });
+}
+
+function showProgress(message) {
+    let progressDiv = document.getElementById('progress-indicator');
+    if (!progressDiv) {
+        progressDiv = document.createElement('div');
+        progressDiv.id = 'progress-indicator';
+        progressDiv.className = 'progress-indicator';
+        // Assuming 'results' is a valid container ID for displaying progress
+        const resultsContainer = document.getElementById('results');
+        if (resultsContainer) {
+            resultsContainer.appendChild(progressDiv);
+        } else {
+            // Fallback if 'results' is not found, append to body or another suitable element
+            document.body.appendChild(progressDiv);
+        }
+    }
+
+    progressDiv.innerHTML = `
+        <div class="progress-spinner"></div>
+        <div class="progress-message">${message}</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    `;
+    progressDiv.style.display = 'block';
+}
+
+function updateProgress(message) {
+    const messageDiv = document.querySelector('#progress-indicator .progress-message');
+    if (messageDiv) {
+        messageDiv.textContent = message;
+    }
+}
+
+function hideProgress() {
+    const progressDiv = document.getElementById('progress-indicator');
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
+}
+
+// Dummy function to avoid errors if displayLLMResults is not defined elsewhere
+function displayLLMResults(data) {
+    console.log('Displaying LLM Results:', data);
+    // Replace with actual display logic if needed
+}

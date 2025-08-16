@@ -4,9 +4,24 @@ import json
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import openai
-from langchain import PromptTemplate, LLMChain
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+try:
+    from langchain import PromptTemplate, LLMChain
+    from langchain.chat_models import ChatOpenAI
+    from langchain.schema import HumanMessage, SystemMessage
+except ImportError:
+    # Fallback for newer langchain versions
+    try:
+        from langchain.prompts import PromptTemplate
+        from langchain.chains import LLMChain
+        from langchain_openai import ChatOpenAI
+        from langchain_core.messages import HumanMessage, SystemMessage
+    except ImportError:
+        print("Warning: LangChain not properly installed. Using basic OpenAI client only.")
+        PromptTemplate = None
+        LLMChain = None
+        ChatOpenAI = None
+        HumanMessage = None
+        SystemMessage = None
 from dotenv import load_dotenv
 import tiktoken
 from github import Github
@@ -21,11 +36,19 @@ class LLMCodeAnalyzer:
         
         if self.api_key:
             openai.api_key = self.api_key
-            self.llm = ChatOpenAI(
-                model=model,
-                temperature=0.3,
-                openai_api_key=self.api_key
-            )
+            try:
+                if ChatOpenAI:
+                    self.llm = ChatOpenAI(
+                        model=model,
+                        temperature=0.3,
+                        openai_api_key=self.api_key
+                    )
+                else:
+                    print("Warning: ChatOpenAI not available. Using basic OpenAI client.")
+                    self.llm = None
+            except Exception as e:
+                print(f"Warning: Failed to initialize ChatOpenAI: {e}")
+                self.llm = None
         else:
             print("Warning: OpenAI API key not found. LLM features will be limited.")
             self.llm = None

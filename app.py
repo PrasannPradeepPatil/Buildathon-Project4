@@ -280,6 +280,14 @@ def analyze_with_llm():
         if not repo_url:
             return jsonify({'error': 'Repository URL is required'}), 400
         
+        # Check for OpenAI API key
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if not openai_key:
+            return jsonify({
+                'error': 'OpenAI API key required for AI analysis. Please add OPENAI_API_KEY to your secrets.',
+                'suggestion': 'Add your OpenAI API key in Replit Secrets (Tools → Secrets)'
+            }), 503
+        
         if not llm_analyzer:
             return jsonify({'error': 'LLM analyzer not available'}), 503
         
