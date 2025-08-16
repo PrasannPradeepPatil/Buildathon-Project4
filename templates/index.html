@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codebase Time Machine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕰️ Codebase Time Machine</h1>
+            <p>Analyze Git repositories and explore their evolution</p>
+        </header>
+        
+        <main>
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="repo-url">Repository URL:</label>
+                    <input type="url" id="repo-url" placeholder="https://github.com/user/repo.git" required>
+                </div>
+                <button id="analyze-btn" onclick="analyzeRepository()">Analyze Repository</button>
+            </div>
+            
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analyzing repository... This may take a moment.</p>
+            </div>
+            
+            <div id="results" class="results hidden">
+                <div class="results-header">
+                    <h2 id="repo-name"></h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number" id="total-commits">0</span>
+                            <span class="stat-label">Commits</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="total-contributors">0</span>
+                            <span class="stat-label">Contributors</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="total-files">0</span>
+                            <span class="stat-label">Files</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insights-section">
+                    <h3>📊 Key Insights</h3>
+                    <div id="insights-content"></div>
+                </div>
+                
+                <div class="contributors-section">
+                    <h3>👥 Top Contributors</h3>
+                    <div id="contributors-list"></div>
+                </div>
+                
+                <div class="commits-section">
+                    <h3>📝 Recent Commits</h3>
+                    <div id="commits-list"></div>
+                </div>
+            </div>
+            
+            <div id="error" class="error hidden">
+                <h3>❌ Error</h3>
+                <p id="error-message"></p>
+            </div>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
