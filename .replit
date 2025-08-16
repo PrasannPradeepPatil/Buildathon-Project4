@@ -1,6 +1,7 @@
 run = "python3 app.py"
 [nix]
-channel = "stable-24_05"
+channel = "stable-25_05"
+packages = ["bash", "cargo", "glibcLocales", "libiconv", "rustc"]
 
 [nix.env]
 PYTHONPATH = "$REPL_HOME"
